@@ -1,0 +1,41 @@
+import numpy as np
+import matplotlib.pyplot as plt
+
+CONFIG = {
+    "Bulk_Dimensions": 5,
+    "Dark_Dimension_Radius_Rx": 2.0e-6,      
+    "Wormhole_Throat_Mass_M": 1.67e-27,      
+    "Initial_Hawking_Temp_T5D": 1.22e50,    
+    "Phase_Shift_Offset": np.pi,             
+    "Brane_Tension_Alpha": 1.0e36            
+}
+
+x_axis = np.linspace(-CONFIG["Dark_Dimension_Radius_Rx"], CONFIG["Dark_Dimension_Radius_Rx"], 1000)
+A_0 = 1.0                                
+wavelength = 500e-9                      
+k = 2 * np.pi / wavelength               
+
+maternal = 0.5 * A_0 * np.sin(k * x_axis)
+paternal_healthy = 0.5 * A_0 * np.sin(k * x_axis + CONFIG["Phase_Shift_Offset"])
+desync_factor = 0.15 
+paternal_perturbed = 0.5 * A_0 * np.sin(k * x_axis + CONFIG["Phase_Shift_Offset"] + desync_factor)
+
+xi_healthy = maternal + paternal_healthy
+xi_perturbed = maternal + paternal_perturbed
+
+plt.figure(figsize=(10, 6))
+plt.plot(x_axis * 1e6, maternal, label="Maternal Metric Vector (M)", color="#3a86ff", linestyle="--", alpha=0.7)
+plt.plot(x_axis * 1e6, paternal_healthy, label="Paternal Metric Vector (P - Healthy)", color="#ff006e", linestyle="--", alpha=0.7)
+plt.plot(x_axis * 1e6, xi_healthy, label="Net Healthy Output (\u039e \u2192 0)", color="#38b000", linewidth=2.5)
+plt.plot(x_axis * 1e6, xi_perturbed, label="Net Perturbed Output (\u039e \u2260 0: Over-pressurization)", color="#cc0000", linewidth=2.5)
+
+plt.title("Parent Filter Metric Noise-Cancellation Operator at Wormhole Throat Boundary", fontsize=12, fontweight='bold', pad=15)
+plt.xlabel("Spatial Scale of Dark Dimension Horizon ($R_X$ across $\mu$m)", fontsize=10)
+plt.ylabel("Normalized Gravitational Amplitude Metric ($\mathcal{G}_{AB}$)", fontsize=10)
+plt.axhline(0, color='black', linewidth=0.8, alpha=0.5)
+plt.grid(True, linestyle=':', alpha=0.6)
+plt.legend(loc="upper right", frameon=True, facecolor="#ffffff", edgecolor="#e0e0e0")
+plt.xlim(-CONFIG["Dark_Dimension_Radius_Rx"] * 1e6, CONFIG["Dark_Dimension_Radius_Rx"] * 1e6)
+
+plt.savefig("parent_metric_first_raw_plot.png", dpi=300, bbox_inches='tight')
+plt.show()
